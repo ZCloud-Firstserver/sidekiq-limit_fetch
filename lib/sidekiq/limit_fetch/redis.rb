@@ -21,8 +21,15 @@ module Sidekiq::LimitFetch::Redis
     end
   end
 
+  def redis_retryable
+    yield
+  rescue Redis::BaseConnectionError
+    sleep 1
+    retry
+  end
+
   def redis
-    Sidekiq.redis {|it| yield it }
+    redis_retryable { Sidekiq.redis {|it| yield it } }
   end
 
   def determine_namespace
